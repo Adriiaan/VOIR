@@ -80,6 +80,8 @@ struct CalibrationInfo calibrate(rpicamopencv::PiCamStill &cam)
     double rms = cv::calibrateCamera(objectPoints, imagePoints, imageSize,
                                      cameraMatrix, distCoeffs, rvecs, tvecs);
 
+    cv::Mat newMat = cv::getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 1, imageSize, 0);
+
     return { .cameraMatrix = cameraMatrix,
              .distCoeffs = distCoeffs,
              .imagePoints = imagePoints };
