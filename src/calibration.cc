@@ -85,7 +85,7 @@ struct CalibrationInfo calibrate(rpicamopencv::PiCamStill &cam)
              .imagePoints = imagePoints };
 }
 
-void stereoCalibrate(struct CalibrationInfo master, struct CalibrationInfo slave) {
+struct RectifyMaps stereoCalibrate(struct CalibrationInfo master, struct CalibrationInfo slave) {
     std::vector<std::vector<cv::Point3f>> objectPoints;
 
     int board_height = 9;
@@ -109,7 +109,17 @@ void stereoCalibrate(struct CalibrationInfo master, struct CalibrationInfo slave
     cv::Mat R, T, E, F;
     
     double rms = cv::stereoCalibrate(objectPoints, master.imagePoints, slave.imagePoints,
-                                    master.cameraMatrix, maste.distCoeffs, slave.cameraMatrix,
+                                    master.cameraMatrix, master.distCoeffs, slave.cameraMatrix,
                                     slave.distCoeffs, imageSize, R, T, E, F, 0,
                                     cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 100, 1e-6));
+
+    cv::Mat R1, R2, P1, P2, Q;
+    cv::stereoRectify(master.cameraMatrix, master.distCoeffs, slave.cameraMatrix, slave.distCoeffs,
+                        imageSize, R, T, R1, R2, P1, P2, Q, 0, -1);
+
+    cv::Mat map1x, map1y, map2x, map2y;
+    cv::initUndistortRectifyMap(master.cameraMatrix, master.distCoeffs, R1, P1, imageSize, CV_16SC2, map1x, map1y);
+    cv::initUndistortRectifyMap(slave.cameraMatrix, slave.distCoeffs, R2, P2, imageSize, CV_16SC2, map2x, map2y);
+
+    return {.map1x = map1x, .map1y = map1y, .map2x = map2x, .map2y = map2y};
 }

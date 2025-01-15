@@ -98,8 +98,16 @@ int main(int argc, char* argv[]) {
     cam.options->height = 480;
 
     cam.startPiCamStill();
-    calibrate(cam);
+
+    // On recoit le struct CalibrationInfo du slave askip
+    struct CalibrationInfo slave;
+    struct CalibrationInfo master;
+
+    master = calibrate(cam);
     cv::Mat color_corrected;
+
+    struct RectifyMaps maps;
+    maps = stereoCalibrate(master, slave);
 
     while (true)
     {
@@ -108,21 +116,21 @@ int main(int argc, char* argv[]) {
 
         // Receive the image
         cv::Mat slave = receiveImage(sock);
-	cv::Mat master = take_picture(cam);
+	    cv::Mat master = take_picture(cam);
 
-	auto disp = compute_sgbm(master, slave);
+	    auto disp = compute_sgbm(master, slave, maps);
 
 
-	// Normalize the disparity map to 8-bit before resizing
-cv::Mat disp8;
-disp.convertTo(disp8, CV_8U, 255.0 / (64 * 16.0)); // Scale to [0, 255]
+        // Normalize the disparity map to 8-bit before resizing
+        cv::Mat disp8;
+        disp.convertTo(disp8, CV_8U, 255.0 / (64 * 16.0)); // Scale to [0, 255]
 
         color_corrected = convertToRGB565(disp8);
 
-	cv::Mat resizedImage;
-	cv::resize(color_corrected, resizedImage, cv::Size(fbInfo.width, fbInfo.height));
+        cv::Mat resizedImage;
+        cv::resize(color_corrected, resizedImage, cv::Size(fbInfo.width, fbInfo.height));
 
-	display_to_fb(color_corrected);
+        display_to_fb(color_corrected);
     }
 
     close(sock); // This will never be reached because we're in an infinite loop
