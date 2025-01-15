@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(voir_project)
+set(CMAKE_CXX_FLAGS "-O3 -Wall -Wextra")
+
 
 # Recherche d'OpenCV
 find_package(PkgConfig REQUIRED)
@@ -42,11 +44,18 @@ execute_process (
 #string(REGEX REPLACE "\n$" "" rpicam_app_lib "${rpicam_app_lib}")
 string(STRIP "${rpicam_app_lib}" rpicam_app_lib)
 
-add_executable(voir src/main.cc)
-add_subdirectory(src)
+add_executable(voir src/main.cc src/picam.cc)
+add_executable(master src/master.cc src/picam.cc src/sgbm.cc)
+add_executable(slave src/slave.cc src/picam.cc)
 
 target_include_directories(voir PRIVATE ${OpenCV_INCLUDE_DIRS} ${LIBCAMERA_INCLUDE_DIRS}  ${RPICAM_APPS_INCLUDE_DIRS} ${RPICAMOPENCV_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
+target_include_directories(master PRIVATE ${OpenCV_INCLUDE_DIRS} ${LIBCAMERA_INCLUDE_DIRS}  ${RPICAM_APPS_INCLUDE_DIRS} ${RPICAMOPENCV_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+
+target_include_directories(slave PRIVATE ${OpenCV_INCLUDE_DIRS} ${LIBCAMERA_INCLUDE_DIRS}  ${RPICAM_APPS_INCLUDE_DIRS} ${RPICAMOPENCV_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 # Lien avec les bibliothèques OpenCV
+
 target_link_libraries(voir PRIVATE  ${OpenCV_LIBS} ${rpicam_app_lib} ${RPICAMOPENCV_LINK_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(master PRIVATE ${OpenCV_LIBS} ${rpicam_app_lib} ${RPICAMOPENCV_LINK_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBS} ${rpicam_app_lib} ${RPICAMOPENCV_LINK_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(slave PRIVATE  ${OpenCV_LIBS} ${rpicam_app_lib} ${RPICAMOPENCV_LINK_LIBRARIES} ${Boost_LIBRARIES})
 # Inclure les répertoires d'en-têtes d'OpenCV LIBCAMERA et RPICAM

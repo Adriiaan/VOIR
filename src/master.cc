@@ -90,88 +90,38 @@ int main(int argc, char* argv[]) {
     }
     // Set capture options
     // cam.options->verbose=true;
-//    cam.options->width = fbInfo.width;
-//    cam.options->height = fbInfo.height;
-//
+    // cam.options->width = fbInfo.width;
+    // cam.options->height = fbInfo.height;
+
     cam.options->width = 640;
     cam.options->height = 480;
+
     cam.startPiCamStill();
 
-
     cv::Mat color_corrected;
-    cv::Mat master;
 
-    bool master_mode = true;
-    int switcher = 50;
-    int limit = 0;
     while (true)
     {
         // Send the request to the slave (request for image)
+        send(sock, "1", 1, 0);
 
         // Receive the image
-	if (master_mode)
-		master = take_picture(cam);
-	else
-	{
-		send(sock, "1", 1, 0);
-		master = receiveImage(sock);
-	}
+        cv::Mat slave = receiveImage(sock);
+	cv::Mat master = take_picture(cam);
 
-	//auto disp = compute_sgbm(master, slave);
+	auto disp = compute_sgbm(master, slave);
+
+        color_corrected = convertToRGB565(disp);
+
 	cv::Mat resizedImage;
-	cv::resize(master, resizedImage, cv::Size(fbInfo.width, fbInfo.height));
-
-        color_corrected = convertToRGB565(resizedImage);
+	cv::resize(disp, resizedImage, cv::Size(fbInfo.width, fbInfo.height));
 
         std::ofstream fbOut("/dev/fb0", std::ios::binary);
-        fbOut.write(reinterpret_cast<const char *>(color_corrected.data),
-                    color_corrected.total() * color_corrected.elemSize());
+        fbOut.write(reinterpret_cast<const char *>(resizedImage.data),
+                    resizedImage.total() * resizedImage.elemSize());
         fbOut.close();
-//	if (limit >= switcher)
-//	{
-//		limit = 0;
-		master_mode = !master_mode;
-	//}
-	limit++;
-
     }
 
     close(sock); // This will never be reached because we're in an infinite loop
     return 0;
 }
-
-// int main(int argc, char *argv[])
-// {
-//     cv::Mat image;
-//     rpicamopencv::PiCamStill cam;
-// 
-//     auto fbInfo = getFramebufferInfo();
-// 
-//     cam.options = cam.GetOptions();
-//     if (cam.options->Parse(argc, argv)) { //test if options have been found and set
-// 	    if (cam.options->verbose >= 2) {
-// 		    cam.options->Print();  //show options used
-// 	    }
-//     }
-//     // Set capture options
-//     // cam.options->verbose=true;
-//     cam.options->width = fbInfo.width;
-//     cam.options->height = fbInfo.height;
-// 
-//     cam.startPiCamStill();
-// 
-// 
-//     cv::Mat frame;
-//     cv::Mat color_corrected;
-//     while (true)
-//     {
-//         frame = take_picture(cam);
-// 
-//         color_corrected = convertToRGB565(frame);
-// 
-//         std::ofstream fbOut("/dev/fb0", std::ios::binary);
-//         fbOut.write(reinterpret_cast<const char *>(color_corrected.data),
-//                     color_corrected.total() * color_corrected.elemSize());
-//         fbOut.close();
-//     }
-// }
