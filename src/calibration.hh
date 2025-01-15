@@ -9,3 +9,4 @@ struct CalibrationInfo {
 };
 
 struct CalibrationInfo calibrate(rpicamopencv::PiCamStill &cam);
+void stereoCalibrate(struct CalibrationInfo master, struct CalibrationInfo slave);

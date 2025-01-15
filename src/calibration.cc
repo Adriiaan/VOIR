@@ -84,3 +84,32 @@ struct CalibrationInfo calibrate(rpicamopencv::PiCamStill &cam)
              .distCoeffs = distCoeffs,
              .imagePoints = imagePoints };
 }
+
+void stereoCalibrate(struct CalibrationInfo master, struct CalibrationInfo slave) {
+    std::vector<std::vector<cv::Point3f>> objectPoints;
+
+    int board_height = 9;
+    int board_width = 6;
+
+    float square_size = 25.0f;
+
+    std::vector<cv::Point3f> objPoints;
+    for (int i = 0; i < board_height; i++) {
+        for (int j = 0; j < board_width; j++) {
+            objPoints.push_back(cv::Point3f(j * square_size, i * square_size, 0.0f));
+        }
+    }
+
+    for (int i = 0; i < master.imagePoints.size(); i++) {
+        objectPoints.push_back(objPoints);
+    }
+
+    cv::Size imageSize(640, 480);
+
+    cv::Mat R, T, E, F;
+    
+    double rms = cv::stereoCalibrate(objectPoints, master.imagePoints, slave.imagePoints,
+                                    master.cameraMatrix, maste.distCoeffs, slave.cameraMatrix,
+                                    slave.distCoeffs, imageSize, R, T, E, F, 0,
+                                    cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 100, 1e-6));
+}
