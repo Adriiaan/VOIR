@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include "picam.hh"
 #include "sgbm.hh"
+#include "calibration.hh"
 #include <iostream>
 
 #define PORT 1234 // Port for communication
@@ -97,7 +98,7 @@ int main(int argc, char* argv[]) {
     cam.options->height = 480;
 
     cam.startPiCamStill();
-
+    calibrate(cam);
     cv::Mat color_corrected;
 
     while (true)
@@ -111,15 +112,17 @@ int main(int argc, char* argv[]) {
 
 	auto disp = compute_sgbm(master, slave);
 
-        color_corrected = convertToRGB565(disp);
+
+	// Normalize the disparity map to 8-bit before resizing
+cv::Mat disp8;
+disp.convertTo(disp8, CV_8U, 255.0 / (64 * 16.0)); // Scale to [0, 255]
+
+        color_corrected = convertToRGB565(disp8);
 
 	cv::Mat resizedImage;
-	cv::resize(disp, resizedImage, cv::Size(fbInfo.width, fbInfo.height));
+	cv::resize(color_corrected, resizedImage, cv::Size(fbInfo.width, fbInfo.height));
 
-        std::ofstream fbOut("/dev/fb0", std::ios::binary);
-        fbOut.write(reinterpret_cast<const char *>(resizedImage.data),
-                    resizedImage.total() * resizedImage.elemSize());
-        fbOut.close();
+	display_to_fb(color_corrected);
     }
 
     close(sock); // This will never be reached because we're in an infinite loop

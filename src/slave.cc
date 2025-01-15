@@ -1,3 +1,5 @@
+#define MASTER 0
+
 #include <errno.h>
 #include <fcntl.h>
 #include <iostream>
@@ -7,21 +9,27 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/opencv.hpp>
+#include <rpicamopencv.hpp>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <rpicamopencv/rpicamopencv.hpp>
+
+#include "calibration.hh"
 #include "picam.hh"
 
 #define PORT 1234 // Port for communication
 
-void sendAll(int sockfd, const void* data, size_t size) {
+void sendAll(int sockfd, const void *data, size_t size)
+{
     size_t totalSent = 0;
-    const char* dataPtr = static_cast<const char*>(data);
+    const char *dataPtr = static_cast<const char *>(data);
 
-    while (totalSent < size) {
-        ssize_t bytesSent = send(sockfd, dataPtr + totalSent, size - totalSent, 0);
-        if (bytesSent <= 0) {
+    while (totalSent < size)
+    {
+        ssize_t bytesSent =
+            send(sockfd, dataPtr + totalSent, size - totalSent, 0);
+        if (bytesSent <= 0)
+        {
             perror("send failed");
             return;
         }
@@ -29,9 +37,10 @@ void sendAll(int sockfd, const void* data, size_t size) {
     }
 }
 
-void sendImage(cv::Mat& image, int sockfd) {
+void sendImage(cv::Mat &image, int sockfd)
+{
     std::vector<uchar> buf;
-    cv::imencode(".jpg", image, buf);  // Encode image as JPEG
+    cv::imencode(".jpg", image, buf); // Encode image as JPEG
     uint32_t size = buf.size();
 
     // Send the size of the image first
@@ -41,7 +50,7 @@ void sendImage(cv::Mat& image, int sockfd) {
     sendAll(sockfd, buf.data(), buf.size());
 }
 
-bool handleRequest(rpicamopencv::PiCamStill& cam, int client_socket)
+bool handleRequest(rpicamopencv::PiCamStill &cam, int client_socket)
 {
     char buffer;
 
@@ -65,17 +74,19 @@ bool handleRequest(rpicamopencv::PiCamStill& cam, int client_socket)
     return true;
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     rpicamopencv::PiCamStill cam;
 
     auto fbInfo = getFramebufferInfo();
 
     cam.options = cam.GetOptions();
-    if (cam.options->Parse(argc, argv)) { //test if options have been found and set
-	    if (cam.options->verbose >= 2) {
-		    cam.options->Print();  //show options used
-	    }
+    if (cam.options->Parse(argc, argv))
+    { // test if options have been found and set
+        if (cam.options->verbose >= 2)
+        {
+            cam.options->Print(); // show options used
+        }
     }
     // Set capture options
     // cam.options->verbose=true;
@@ -115,6 +126,7 @@ int main(int argc, char* argv[])
     }
 
     std::cout << "Server is ready. Waiting for connections...\n";
+    calibrate(cam);
 
 connect:
     // Accept the first client connection

@@ -13,3 +13,4 @@ struct FramebufferInfo
 cv::Mat convertToRGB565(const cv::Mat &image);
 cv::Mat take_picture(rpicamopencv::PiCamStill &cam);
 struct FramebufferInfo getFramebufferInfo();
+void display_to_fb(cv::Mat& image);

@@ -49,3 +49,18 @@ cv::Mat take_picture(rpicamopencv::PiCamStill &cam)
     cam.captureStillImage(image);
     return image;
 }
+
+void display_to_fb(cv::Mat& image) {
+	static struct FramebufferInfo fbInfo = getFramebufferInfo();
+	cv::Mat resizedImage;
+	cv::resize(image, resizedImage, cv::Size(fbInfo.width, fbInfo.height));
+
+	cv::Mat colored = convertToRGB565(resizedImage);
+
+	std::ofstream fbOut("/dev/fb0", std::ios::binary);
+	if (!fbOut.is_open())
+		return;
+	fbOut.write(reinterpret_cast<const char *>(colored.data),
+			colored.total() * colored.elemSize());
+	fbOut.close();
+}
